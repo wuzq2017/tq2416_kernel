@@ -273,6 +273,10 @@ static int uda134x_hw_params(struct snd_pcm_substream *substream,
 
 	uda134x_write(codec, UDA134X_STATUS0, hw_params);
 
+//    uda134x_write(codec, UDA134X_STATUS1, 0xc1);
+//    uda134x_write(codec, UDA134X_EA101, 0x1f); /*MIC gain*/
+//    uda134x_write(codec, UDA134X_STATUS1, 0xe3); /*can hear sound when record*/
+    
 	return 0;
 }
 
@@ -338,6 +342,7 @@ static int uda134x_set_bias_level(struct snd_soc_codec *codec,
 	switch (level) {
 	case SND_SOC_BIAS_ON:
 		/* ADC, DAC on */
+        pr_debug("%s: ADC,DAC on\n", __func__);
 		switch (pd->model) {
 		case UDA134X_UDA1340:
 		case UDA134X_UDA1344:
@@ -357,6 +362,7 @@ static int uda134x_set_bias_level(struct snd_soc_codec *codec,
 		break;
 	case SND_SOC_BIAS_PREPARE:
 		/* power on */
+        pr_debug("%s: power on\n", __func__);
 		if (pd->power) {
 			pd->power(1);
 			/* Sync reg_cache with the hardware */
@@ -366,6 +372,7 @@ static int uda134x_set_bias_level(struct snd_soc_codec *codec,
 		break;
 	case SND_SOC_BIAS_STANDBY:
 		/* ADC, DAC power off */
+        pr_debug("%s: ADC,DAC off\n", __func__);
 		switch (pd->model) {
 		case UDA134X_UDA1340:
 		case UDA134X_UDA1344:
@@ -385,6 +392,7 @@ static int uda134x_set_bias_level(struct snd_soc_codec *codec,
 		break;
 	case SND_SOC_BIAS_OFF:
 		/* power off */
+        pr_debug("%s: power off\n", __func__);
 		if (pd->power)
 			pd->power(0);
 		break;

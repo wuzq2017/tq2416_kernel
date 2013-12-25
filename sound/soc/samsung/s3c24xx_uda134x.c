@@ -24,7 +24,7 @@
 
 #include <mach/regs-gpio.h>
 #include <plat/reg-gpio-2416.h>
-#define CONFIG_TQ2416_DEBUG_UDA1341_MACHINE
+//#define CONFIG_TQ2416_DEBUG_UDA1341_MACHINE
 
 // #define ENFORCE_RATES 1 
 /*
@@ -105,16 +105,16 @@ static int s3c24xx_uda134x_startup(struct snd_pcm_substream *substream)
 				switch(i)
 				{
 					case 0:
-						fs=512;
+						fs=256;
 						break;						
 					case 1:
 						fs=384;
 						break;
 					case 2:
-						fs=256;
+						fs=512;
 						break;
 					default:
-                        fs =384;
+                        fs =256;
 						break;					
 				}
 #else
@@ -122,8 +122,7 @@ static int s3c24xx_uda134x_startup(struct snd_pcm_substream *substream)
 #endif
 				rates[i*LIMIT_PRESCAL_RANGE] = clk_get_rate(xtal) / fs;
 				for (j = 1; j < LIMIT_PRESCAL_RANGE; j++)
-					rates[i*LIMIT_PRESCAL_RANGE + j] = clk_get_rate(pclk) /
-						(j * fs);
+					rates[i*LIMIT_PRESCAL_RANGE + j] = clk_get_rate(pclk) / (j * fs);
 			}
 		}
 	}
@@ -194,18 +193,18 @@ static int s3c24xx_uda134x_hw_params(struct snd_pcm_substream *substream,
 #ifdef CONFIG_CPU_S3C2416
 	switch(bi/LIMIT_PRESCAL_RANGE)
 	{
-		case 2:
-			fs_mode = S3C2416_IISMOD_512FS;
-			break;			
-		case 1:
+    case 0:
+        fs_mode = S3C2416_IISMOD_256FS;
+        break;
+    case 1:
 			fs_mode = S3C2416_IISMOD_384FS;
 			break;
-		case 0:
-			fs_mode = S3C2416_IISMOD_256FS;
-			break;
-		default:
-			fs_mode = S3C2416_IISMOD_256FS;
-			break;
+    case 2:
+        fs_mode = S3C2416_IISMOD_512FS;
+        break;			
+    default:
+        fs_mode = S3C2416_IISMOD_256FS;
+        break;
 	}
 	div = bi % LIMIT_PRESCAL_RANGE;
 	if (bi % LIMIT_PRESCAL_RANGE == 0) {

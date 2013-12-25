@@ -100,7 +100,7 @@ static void s3c24xx_snd_txctrl(int on)
 		 * engine and FIFOs to reset. If this isn't allowed, the
 		 * DMA engine will simply freeze randomly.
 		 */
-		iiscon  &= ~S3C2416_IISCON_I2SACTIVE;
+//		iiscon  &= ~S3C2416_IISCON_I2SACTIVE;
 		iiscon &= ~S3C2416_IISCON_TXDMACTIVE;
 		writel(iiscon,  s3c24xx_i2s.regs + S3C2410_IISCON);
 	}
@@ -110,10 +110,14 @@ static void s3c24xx_snd_txctrl(int on)
 static void s3c24xx_snd_rxctrl(int on)
 {
 
-	u32 iiscon;
+	u32 iiscon, iisfic, iismod, iispsr;
 	DBG("Entered %s\n", __func__);
-
+    iisfic = readl(s3c24xx_i2s.regs + S3C2416_IISFIC);
+    iispsr = readl(s3c24xx_i2s.regs + S3C2416_IISPSR);
 	iiscon  = readl(s3c24xx_i2s.regs + S3C2410_IISCON);
+	iismod  = readl(s3c24xx_i2s.regs + S3C2410_IISMOD);
+	DBG("r: IISCON: %x IISMOD: %x IISFCON: %x IISPSR: %x\n", iiscon, iismod, iisfic, iispsr);
+    
 	if (on) {
 
 		iiscon	|= S3C2416_IISCON_RXDMACTIVE;
@@ -126,13 +130,13 @@ static void s3c24xx_snd_rxctrl(int on)
 		 * engine and FIFOs to reset. If this isn't allowed, the
 		 * DMA engine will simply freeze randomly.
 		 */
-
-		iiscon  &= ~S3C2416_IISCON_I2SACTIVE;
+        /* 不关闭iis防止，双工工作时，停止录音对播放造成影响 */
+//		iiscon  &= ~S3C2416_IISCON_I2SACTIVE;
 		iiscon	&= ~S3C2416_IISCON_RXDMACTIVE;
 		writel(iiscon,  s3c24xx_i2s.regs + S3C2410_IISCON);
 	}
+    DBG("w: IISCON: %x IISMOD: %x IISFCON: %x IISPSR: %x\n", iiscon, iismod, iisfic, iispsr);
 
-	DBG("w: IISCON: %x \n", iiscon);
 }
 
 /*
@@ -360,17 +364,17 @@ static int s3c24xx_i2s_set_clkdiv(struct snd_soc_dai *cpu_dai,
 
 	switch (div_id) {
 	case S3C24XX_DIV_BCLK: //1: setting BFS
-        div = 0<<1;        /*32fs*/
+//        div = 0<<1;        /*32fs*/
 		reg = readl(s3c24xx_i2s.regs + S3C2410_IISMOD) & ~S3C2416_IISMOD_BFS_MASK;
 		writel(reg | div, s3c24xx_i2s.regs + S3C2410_IISMOD);
 		break;
 	case S3C24XX_DIV_MCLK://0: setting RFS|FS  //BFS*BLC(16)==> RFS
-        div = 0<<3;       /* root fs 256fs*/
+//        div = 0<<3;       /* root fs 256fs*/
  		reg = readl(s3c24xx_i2s.regs + S3C2410_IISMOD) & ~S3C2416_IISMOD_FS_MASK;
 		writel(reg | div, s3c24xx_i2s.regs + S3C2410_IISMOD);
 		break;
 	case S3C24XX_DIV_PRESCALER: //2: setting prescaler
-        div = 5<<8;             /*codec clock 256fs*/
+//        div = 5<<8;             /*codec clock 256fs*/
 		reg = readl(s3c24xx_i2s.regs + S3C2416_IISPSR);
 		reg &= ~(S3C2416_IISPSR_PS_MASK|S3C2416_IISPSR_PSRAEN); //clear bits
 		reg |= ( div |S3C2416_IISPSR_PSRAEN);//setting value
