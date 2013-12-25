@@ -413,7 +413,7 @@ static int soc_pcm_hw_params(struct snd_pcm_substream *substream,
 	int ret = 0;
 
 	mutex_lock_nested(&rtd->pcm_mutex, rtd->pcm_subclass);
-
+    /* 调用s3c24xx_uda134x.c:s3c4xx_uda134x_hw_params */
 	if (rtd->dai_link->ops && rtd->dai_link->ops->hw_params) {
 		ret = rtd->dai_link->ops->hw_params(substream, params);
 		if (ret < 0) {
@@ -421,7 +421,7 @@ static int soc_pcm_hw_params(struct snd_pcm_substream *substream,
 			goto out;
 		}
 	}
-
+    /* 调用uda134x.c:uda134x_hw_params */
 	if (codec_dai->driver->ops->hw_params) {
 		ret = codec_dai->driver->ops->hw_params(substream, params, codec_dai);
 		if (ret < 0) {
@@ -430,7 +430,7 @@ static int soc_pcm_hw_params(struct snd_pcm_substream *substream,
 			goto codec_err;
 		}
 	}
-
+    /* 调用s3c2416.c:s3c4xx_i2s_hw_params */
 	if (cpu_dai->driver->ops->hw_params) {
 		ret = cpu_dai->driver->ops->hw_params(substream, params, cpu_dai);
 		if (ret < 0) {
@@ -439,7 +439,7 @@ static int soc_pcm_hw_params(struct snd_pcm_substream *substream,
 			goto interface_err;
 		}
 	}
-
+    /* 调用dma.c:dma_hw_params */
 	if (platform->driver->ops && platform->driver->ops->hw_params) {
 		ret = platform->driver->ops->hw_params(substream, params);
 		if (ret < 0) {

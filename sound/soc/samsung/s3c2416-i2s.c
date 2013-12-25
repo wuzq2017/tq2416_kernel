@@ -48,7 +48,7 @@ static struct s3c_dma_params s3c24xx_i2s_pcm_stereo_out = {
 	.client		= &s3c24xx_dma_client_out,
 	.channel	= DMACH_I2S_OUT,
 	.dma_addr	= S3C2410_PA_IIS + S3C2416_IISFIFOTX,
-	.dma_size	= 4,
+	.dma_size	= 4,            /*2416 必须以 2words 写FIFO*/
 };
 
 static struct s3c_dma_params s3c24xx_i2s_pcm_stereo_in = {
@@ -268,10 +268,12 @@ static int s3c24xx_i2s_hw_params(struct snd_pcm_substream *substream,
 	case SNDRV_PCM_FORMAT_S8:
         iismod &=~S3C2416_IISMOD_BLC_MASK;
 //        iismod |= S3C2416_IISMOD_BLC_8BITS;//UDA1431 supports 8bit 16bit 20bit
+//        dma_data->dma_size = 1;
 		break;
 	case SNDRV_PCM_FORMAT_S16_LE:
          iismod &=~S3C2416_IISMOD_BLC_MASK;
          //       iismod |= S3C2416_IISMOD_BLC_16BITS;//UDA1431 supports 8bit 16bit 20bit
+        dma_data->dma_size = 2;
 		break;
 	default:
 		return -EINVAL;
