@@ -48,14 +48,14 @@ static struct s3c_dma_params s3c24xx_i2s_pcm_stereo_out = {
 	.client		= &s3c24xx_dma_client_out,
 	.channel	= DMACH_I2S_OUT,
 	.dma_addr	= S3C2410_PA_IIS + S3C2416_IISFIFOTX,
-	.dma_size	= 2,
+	.dma_size	= 4,
 };
 
 static struct s3c_dma_params s3c24xx_i2s_pcm_stereo_in = {
 	.client		= &s3c24xx_dma_client_in,
 	.channel	= DMACH_I2S_IN,
 	.dma_addr	= S3C2410_PA_IIS + S3C2416_IISFIFORX,
-	.dma_size	= 2,
+	.dma_size	= 4,
 };
 
 struct s3c24xx_i2s_info {
@@ -74,22 +74,22 @@ static void s3c24xx_snd_txctrl(int on)
 
 	u32 iiscon;
     u32 iismod;
-    u32 iisfic;
-
+    u32 iisfic, iispsr;
+    u32 reg;
 	DBG("Entered %s, on=%d\n", __func__, on);
 
     iisfic = readl(s3c24xx_i2s.regs + S3C2416_IISFIC);
+    iispsr = readl(s3c24xx_i2s.regs + S3C2416_IISPSR);
 	iiscon  = readl(s3c24xx_i2s.regs + S3C2410_IISCON);
 	iismod  = readl(s3c24xx_i2s.regs + S3C2410_IISMOD);
-	DBG("r: IISCON: %x IISMOD: %x IISFCON: %x\n", iiscon, iismod, iisfic);
+	DBG("r: IISCON: %x IISMOD: %x IISFCON: %x IISPSR: %x\n", iiscon, iismod, iisfic, iispsr);
     
 	if (on) {
 
 		iiscon |= S3C2416_IISCON_TXDMACTIVE;
 		iiscon &= ~S3C2416_IISCON_FTXURINTEN;//disable under-run interrupt
 		iiscon |= S3C2416_IISCON_I2SACTIVE;
-        iiscon |= 1<<0;         /*enable i2s */
-        iismod &= ~(0x11 << 8);
+        
 		writel(iiscon,  s3c24xx_i2s.regs + S3C2410_IISCON);
         writel(iismod,  s3c24xx_i2s.regs + S3C2410_IISMOD);
         
@@ -102,11 +102,9 @@ static void s3c24xx_snd_txctrl(int on)
 		 */
 		iiscon  &= ~S3C2416_IISCON_I2SACTIVE;
 		iiscon &= ~S3C2416_IISCON_TXDMACTIVE;
-        iiscon &= ~(1<<0);
-
 		writel(iiscon,  s3c24xx_i2s.regs + S3C2410_IISCON);
 	}
-	DBG("w: IISCON: %x \n", iiscon);
+    DBG("w: IISCON: %x IISMOD: %x IISFCON: %x IISPSR: %x\n", iiscon, iismod, iisfic, iispsr);
 }
 
 static void s3c24xx_snd_rxctrl(int on)
@@ -226,21 +224,6 @@ static int s3c24xx_i2s_hw_params(struct snd_pcm_substream *substream,
 	u32 gpeup=0;
 
 	DBG("Entered %s\n", __func__);
-#if  0
-//added by paul>>>>>>>>>>>>>>>>>
-	iismod = readl(s3c24xx_i2s.regs + S3C2410_IISMOD);
-
-	iismod &= ~S3C2416_IISMOD_CLK_MASK;
-	iismod |= S3C2416_IISMOD_MASTER_PCLK | S3C2416_IISMOD_INTERNAL_CLK;
-
-	iismod &= ~S3C2416_IISMOD_FM_MASK;//SDF
-//	iismod |= S3C2416_IISMOD_MSB;
-//	iismod |= S3C2416_IISMOD_LSB;
-	iismod |=S3C2416_IISMOD_IIS;
-
-	writel(iismod, s3c24xx_i2s.regs + S3C2410_IISMOD);
-//end<<<<<<<<<<<<<<<<<<<<<<<
-#endif
 
 	writel((readl(S3C2410_MISCCR) & ~(7<<8))|(1<<8), S3C2410_MISCCR);
 #if 0
@@ -280,13 +263,11 @@ static int s3c24xx_i2s_hw_params(struct snd_pcm_substream *substream,
 	switch (params_format(params)) {
 	case SNDRV_PCM_FORMAT_S8:
         iismod &=~S3C2416_IISMOD_BLC_MASK;
-        iismod |= S3C2416_IISMOD_BLC_8BITS;//UDA1431 supports 8bit 16bit 20bit
-        dma_data->dma_size = 1;
+//        iismod |= S3C2416_IISMOD_BLC_8BITS;//UDA1431 supports 8bit 16bit 20bit
 		break;
 	case SNDRV_PCM_FORMAT_S16_LE:
          iismod &=~S3C2416_IISMOD_BLC_MASK;
-         iismod |= S3C2416_IISMOD_BLC_16BITS;//UDA1431 supports 8bit 16bit 20bit
-         dma_data->dma_size = 2;
+         //       iismod |= S3C2416_IISMOD_BLC_16BITS;//UDA1431 supports 8bit 16bit 20bit
 		break;
 	default:
 		return -EINVAL;
@@ -294,7 +275,6 @@ static int s3c24xx_i2s_hw_params(struct snd_pcm_substream *substream,
 #endif
     iismod &=~S3C2416_IISMOD_BLC_MASK;
     iismod |= S3C2416_IISMOD_BLC_16BITS;//UDA1431 supports 8bit 16bit 20bit
-    dma_data->dma_size = 2;
     
 	writel(iiscon, s3c24xx_i2s.regs + S3C2410_IISCON);
 	writel(iismod, s3c24xx_i2s.regs + S3C2410_IISMOD);
@@ -377,19 +357,20 @@ static int s3c24xx_i2s_set_clkdiv(struct snd_soc_dai *cpu_dai,
 {
 	u32 reg;
 
-	DBG("Entered %s\n", __func__);
 
 	switch (div_id) {
-	case S3C24XX_DIV_BCLK: //setting BFS 
+	case S3C24XX_DIV_BCLK: //1: setting BFS
+        div = 0<<1;        /*32fs*/
 		reg = readl(s3c24xx_i2s.regs + S3C2410_IISMOD) & ~S3C2416_IISMOD_BFS_MASK;
 		writel(reg | div, s3c24xx_i2s.regs + S3C2410_IISMOD);
-
 		break;
-	case S3C24XX_DIV_MCLK://setting RFS|FS  //BFS*BLC(16)==> RFS
+	case S3C24XX_DIV_MCLK://0: setting RFS|FS  //BFS*BLC(16)==> RFS
+        div = 0<<3;       /* root fs 256fs*/
  		reg = readl(s3c24xx_i2s.regs + S3C2410_IISMOD) & ~S3C2416_IISMOD_FS_MASK;
 		writel(reg | div, s3c24xx_i2s.regs + S3C2410_IISMOD);
 		break;
-	case S3C24XX_DIV_PRESCALER: //setting prescaler
+	case S3C24XX_DIV_PRESCALER: //2: setting prescaler
+        div = 5<<8;             /*codec clock 256fs*/
 		reg = readl(s3c24xx_i2s.regs + S3C2416_IISPSR);
 		reg &= ~(S3C2416_IISPSR_PS_MASK|S3C2416_IISPSR_PSRAEN); //clear bits
 		reg |= ( div |S3C2416_IISPSR_PSRAEN);//setting value
@@ -398,7 +379,7 @@ static int s3c24xx_i2s_set_clkdiv(struct snd_soc_dai *cpu_dai,
 	default:
 		return -EINVAL;
 	}
-
+	DBG("Entered %s, div_id=%d, div=%d\n", __func__,div_id, div);
 	return 0;
 }
 

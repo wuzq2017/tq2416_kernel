@@ -24,6 +24,7 @@
 
 #include <mach/regs-gpio.h>
 #include <plat/reg-gpio-2416.h>
+#define CONFIG_TQ2416_DEBUG_UDA1341_MACHINE
 
 // #define ENFORCE_RATES 1 
 /*
@@ -113,6 +114,7 @@ static int s3c24xx_uda134x_startup(struct snd_pcm_substream *substream)
 						fs=256;
 						break;
 					default:
+                        fs =384;
 						break;					
 				}
 #else
@@ -179,11 +181,11 @@ static int s3c24xx_uda134x_hw_params(struct snd_pcm_substream *substream,
 		if (cerr < err) {
 			err = cerr;
 			bi = i;
+		}
+	}
 #ifdef CONFIG_TQ2416_DEBUG_UDA1341_MACHINE
 	printk(" bi : %d   i : %d   rates[%d] : %d  rate: %lu \n",bi, i, i,rates[i],rate);
 #endif
-		}
-	}
 
 #ifdef CONFIG_TQ2416_DEBUG_UDA1341_MACHINE
 	printk("rates[0] : %d  rates[64] : %d  rates[128] : %d\n",rates[0],rates[64],rates[128]);
@@ -234,13 +236,17 @@ static int s3c24xx_uda134x_hw_params(struct snd_pcm_substream *substream,
 	{
 		case S3C2416_IISMOD_512FS:
 			clk = 512 * rate;
+            pr_debug("MCLK:512fs\n");
+                
 			break;
 		case S3C2416_IISMOD_384FS:
 			clk = 384 * rate;
+            pr_debug("MCLK:384fs\n");
 			break;
 		case S3C2416_IISMOD_256FS:			
 		default:
 			clk = 256 * rate;
+            pr_debug("MCLK:256fs\n");
 			break;
 
 	}
@@ -285,16 +291,21 @@ static int s3c24xx_uda134x_hw_params(struct snd_pcm_substream *substream,
 	switch(fs_mode)
 	{
 		case S3C2416_IISMOD_256FS:
-			bfs=S3C2416_IISMOD_16FS;
+//			bfs=S3C2416_IISMOD_16FS;
+            bfs=S3C2416_IISMOD_32FS;
+            pr_debug("MCLK:256fs    BFS=32fs\n");
 			break;
 		case S3C2416_IISMOD_384FS:
 			bfs=S3C2416_IISMOD_24FS;
+            pr_debug("MCLK:384fs    BFS=24fs\n");
 			break;
 		case S3C2416_IISMOD_512FS:
 			bfs=S3C2416_IISMOD_32FS;
+            pr_debug("MCLK:512fs    BFS=32fs\n");
 			break;
 		default:
 			bfs=S3C2416_IISMOD_32FS;
+            pr_debug("MCLK: unknow    BFS=32fs\n");
 			break;
 
 	}

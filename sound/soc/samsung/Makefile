@@ -1,4 +1,5 @@
-EXTRA_CFLAGS += -g -O0 -Wall -DDEBUG
+s3c2416-i2s.o_CFLAGS += -g -O0 -Wall -DDEBUG
+s3c24xx_uda134x.o_CFLAGS += -g -O0 -Wall -DDEBUG
 # S3c24XX Platform Support
 snd-soc-s3c24xx-objs := dma.o
 #snd-soc-s3c24xx-objs := s3c24xx_pcm.o

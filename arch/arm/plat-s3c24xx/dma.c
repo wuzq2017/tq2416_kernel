@@ -74,6 +74,9 @@ struct s3c2410_dma_regstate {
 	unsigned long         dstat;
 	unsigned long         dcon;
 	unsigned long         dmsktrig;
+#ifdef CONFIG_CPU_S3C2416
+    unsigned long         dreqsel;
+#endif    
 };
 
 #ifdef CONFIG_S3C2410_DMA_DEBUG
@@ -91,16 +94,27 @@ dmadbg_capture(struct s3c2410_dma_chan *chan, struct s3c2410_dma_regstate *regs)
 	regs->dstat    = dma_rdreg(chan, S3C2410_DMA_DSTAT);
 	regs->dcon     = dma_rdreg(chan, S3C2410_DMA_DCON);
 	regs->dmsktrig = dma_rdreg(chan, S3C2410_DMA_DMASKTRIG);
+#ifdef CONFIG_CPU_S3C2416
+    regs->dreqsel = dma_rdreg(chan, S3C2443_DMA_DMAREQSEL);
+#endif    
 }
 
 static void
 dmadbg_dumpregs(const char *fname, int line, struct s3c2410_dma_chan *chan,
 		 struct s3c2410_dma_regstate *regs)
 {
+#ifdef CONFIG_CPU_S3C2416
+	printk(KERN_DEBUG "dma%d: %s:%d: DCSRC=%08lx, DISRC=%08lx, DSTAT=%08lx DMT=%02lx, DCON=%08lx, DREQSEL=%08lx\n",
+	       chan->number, fname, line,
+	       regs->dcsrc, regs->disrc, regs->dstat, regs->dmsktrig,
+	       regs->dcon, regs->dreqsel);
+
+#else    
 	printk(KERN_DEBUG "dma%d: %s:%d: DCSRC=%08lx, DISRC=%08lx, DSTAT=%08lx DMT=%02lx, DCON=%08lx\n",
 	       chan->number, fname, line,
 	       regs->dcsrc, regs->disrc, regs->dstat, regs->dmsktrig,
 	       regs->dcon);
+#endif    
 }
 
 static void
