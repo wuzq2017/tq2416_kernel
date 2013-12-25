@@ -699,7 +699,7 @@ static void __init tq2416_map_io(void)
 
 static void __init tq2416_machine_init(void)
 {
-//	s3c_fb_set_platdata(&tq2416_fb_platdata);
+	s3c_fb_set_platdata(&tq2416_fb_platdata);
 	//sd card data
 #ifdef CONFIG_S3C_DEV_HSMMC
 	s3c_sdhci0_set_platdata(&tq2416_hsmmc0_pdata);
