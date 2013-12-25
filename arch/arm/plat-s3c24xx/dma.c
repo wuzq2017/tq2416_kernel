@@ -1376,7 +1376,7 @@ static struct s3c2410_dma_chan *s3c2410_dma_map_channel(int channel)
 	ch_map = dma_sel.map + channel;
 
 	/* first, try the board mapping */
-
+#if 0
 	if (dma_order) {
 		ord = &dma_order->channels[channel];
 
@@ -1395,7 +1395,7 @@ static struct s3c2410_dma_chan *s3c2410_dma_map_channel(int channel)
 		if (ord->flags & DMA_CH_NEVER)
 			return NULL;
 	}
-
+#endif
 	/* second, search the channel map for first free */
 
 	for (ch = 0; ch < dma_channels; ch++) {

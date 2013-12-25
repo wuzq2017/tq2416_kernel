@@ -166,7 +166,7 @@ static void s3c_pcm_snd_txctrl(struct s3c_pcm_info *pcm, int on)
 {
 	void __iomem *regs = pcm->regs;
 	u32 ctl, clkctl;
-
+	dev_dbg(pcm->dev, "Entered %s\n", __func__);
 	clkctl = readl(regs + S3C_PCM_CLKCTL);
 	ctl = readl(regs + S3C_PCM_CTL);
 	ctl &= ~(S3C_PCM_CTL_TXDIPSTICK_MASK
@@ -197,7 +197,7 @@ static void s3c_pcm_snd_rxctrl(struct s3c_pcm_info *pcm, int on)
 {
 	void __iomem *regs = pcm->regs;
 	u32 ctl, clkctl;
-
+	dev_dbg(pcm->dev, "Entered %s\n", __func__);
 	ctl = readl(regs + S3C_PCM_CTL);
 	clkctl = readl(regs + S3C_PCM_CLKCTL);
 	ctl &= ~(S3C_PCM_CTL_RXDIPSTICK_MASK
@@ -428,7 +428,7 @@ static int s3c_pcm_set_sysclk(struct snd_soc_dai *cpu_dai,
 	struct s3c_pcm_info *pcm = snd_soc_dai_get_drvdata(cpu_dai);
 	void __iomem *regs = pcm->regs;
 	u32 clkctl = readl(regs + S3C_PCM_CLKCTL);
-
+	dev_dbg(pcm->dev, "Entered %s\n", __func__);
 	switch (clk_id) {
 	case S3C_PCM_CLKSRC_PCLK:
 		clkctl |= S3C_PCM_CLKCTL_SERCLKSEL_PCLK;

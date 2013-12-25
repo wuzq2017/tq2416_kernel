@@ -10,7 +10,7 @@
  *
  *  This program is free software; you can redistribute  it and/or modify it
  *  under  the terms of  the GNU General  Public License as published by the
- *  Free Software Foundation;  either version 2 of the  License, or (at your
+*  Free Software Foundation;  either version 2 of the  License, or (at your
  *  option) any later version.
  */
 
@@ -28,6 +28,13 @@
 #include <mach/regs-s3c2443-clock.h>
 #include "dma.h"
 #include "s3c24xx-i2s.h"
+
+#define S3C24XX_I2S_DEBUG 1
+#if S3C24XX_I2S_DEBUG
+#define DBG(x...) printk(KERN_DEBUG "s3c24xx-i2s: " x)
+#else
+#define DBG(x...)
+#endif
 
 static struct s3c2410_dma_client s3c24xx_dma_client_out = {
 	.name = "I2S PCM Stereo out"
@@ -48,7 +55,6 @@ static struct s3c_dma_params s3c24xx_i2s_pcm_stereo_in = {
 	.client		= &s3c24xx_dma_client_in,
 	.channel	= DMACH_I2S_IN,
 	.dma_addr	= S3C2410_PA_IIS + S3C2416_IISFIFORX,
-
 	.dma_size	= 2,
 };
 
@@ -67,18 +73,26 @@ static void s3c24xx_snd_txctrl(int on)
 {
 
 	u32 iiscon;
+    u32 iismod;
+    u32 iisfic;
 
+	DBG("Entered %s, on=%d\n", __func__, on);
 
-
-	pr_debug("Entered %s\n", __func__);
-
+    iisfic = readl(s3c24xx_i2s.regs + S3C2416_IISFIC);
 	iiscon  = readl(s3c24xx_i2s.regs + S3C2410_IISCON);
+	iismod  = readl(s3c24xx_i2s.regs + S3C2410_IISMOD);
+	DBG("r: IISCON: %x IISMOD: %x IISFCON: %x\n", iiscon, iismod, iisfic);
+    
 	if (on) {
 
 		iiscon |= S3C2416_IISCON_TXDMACTIVE;
 		iiscon &= ~S3C2416_IISCON_FTXURINTEN;//disable under-run interrupt
 		iiscon |= S3C2416_IISCON_I2SACTIVE;
+        iiscon |= 1<<0;         /*enable i2s */
+        iismod &= ~(0x11 << 8);
 		writel(iiscon,  s3c24xx_i2s.regs + S3C2410_IISCON);
+        writel(iismod,  s3c24xx_i2s.regs + S3C2410_IISMOD);
+        
 	} else {
 		/* note, we have to disable the FIFOs otherwise bad things
 		 * seem to happen when the DMA stops. According to the
@@ -87,17 +101,19 @@ static void s3c24xx_snd_txctrl(int on)
 		 * DMA engine will simply freeze randomly.
 		 */
 		iiscon  &= ~S3C2416_IISCON_I2SACTIVE;
-		iiscon &= ~S3C2416_IISCON_TXDMACTIVE;		
+		iiscon &= ~S3C2416_IISCON_TXDMACTIVE;
+        iiscon &= ~(1<<0);
+
 		writel(iiscon,  s3c24xx_i2s.regs + S3C2410_IISCON);
 	}
-	pr_debug("w: IISCON: %x \n", iiscon);
+	DBG("w: IISCON: %x \n", iiscon);
 }
 
 static void s3c24xx_snd_rxctrl(int on)
 {
 
 	u32 iiscon;
-	pr_debug("Entered %s\n", __func__);
+	DBG("Entered %s\n", __func__);
 
 	iiscon  = readl(s3c24xx_i2s.regs + S3C2410_IISCON);
 	if (on) {
@@ -118,7 +134,7 @@ static void s3c24xx_snd_rxctrl(int on)
 		writel(iiscon,  s3c24xx_i2s.regs + S3C2410_IISCON);
 	}
 
-	pr_debug("w: IISCON: %x \n", iiscon);
+	DBG("w: IISCON: %x \n", iiscon);
 }
 
 /*
@@ -131,7 +147,7 @@ static int s3c24xx_snd_lrsync(void)
 
 	int timeout=jiffies + msecs_to_jiffies(5);
 
-	pr_debug("Entered %s\n", __func__);
+	DBG("Entered %s\n", __func__);
 
 	while (1) {
 		iiscon = readl(s3c24xx_i2s.regs + S3C2410_IISCON);
@@ -150,7 +166,7 @@ static int s3c24xx_snd_lrsync(void)
  */
 static inline int s3c24xx_snd_is_clkmaster(void)
 {
-	pr_debug("Entered %s\n", __func__);
+	DBG("Entered %s\n", __func__);
 	return (readl(s3c24xx_i2s.regs + S3C2410_IISMOD) & S3C2416_IISMOD_SLAVE_PCLK)? 0:1;
 }
 
@@ -163,16 +179,18 @@ static int s3c24xx_i2s_set_fmt(struct snd_soc_dai *cpu_dai,
 	u32 iismod;
 
 	iismod = readl(s3c24xx_i2s.regs + S3C2410_IISMOD);
-	pr_debug("hw_params r: IISMOD: %x \n", iismod);
+	DBG("hw_params r: IISMOD: %x \n", iismod);
 	iismod &= ~S3C2416_IISMOD_CLK_MASK;
 	switch (fmt & SND_SOC_DAIFMT_MASTER_MASK) {
 	case SND_SOC_DAIFMT_CBS_CFS:
 		//master mode use PCLK
 		iismod |= S3C2416_IISMOD_MASTER_PCLK | S3C2416_IISMOD_INTERNAL_CLK;
+        DBG("Master mode use PCLK\n");
 		break;
 	case SND_SOC_DAIFMT_CBS_CFM:
 		//slave mode use PCLK
 		iismod |= S3C2416_IISMOD_SLAVE_PCLK;
+        DBG("Slave mode use PCLK\n");
 		break;
 	default:
 		return -EINVAL;
@@ -207,7 +225,7 @@ static int s3c24xx_i2s_hw_params(struct snd_pcm_substream *substream,
 	u32 iisfcon;
 	u32 gpeup=0;
 
-	pr_debug("Entered %s\n", __func__);
+	DBG("Entered %s\n", __func__);
 #if  0
 //added by paul>>>>>>>>>>>>>>>>>
 	iismod = readl(s3c24xx_i2s.regs + S3C2410_IISMOD);
@@ -225,7 +243,7 @@ static int s3c24xx_i2s_hw_params(struct snd_pcm_substream *substream,
 #endif
 
 	writel((readl(S3C2410_MISCCR) & ~(7<<8))|(1<<8), S3C2410_MISCCR);
-
+#if 0
 	/* Configure the I2S pins in correct mode */
 	writel(0x0, S3C2450_GPESEL);
 	s3c2410_gpio_cfgpin(S3C2410_GPE0, S3C2410_GPE0_I2SLRCK);
@@ -237,13 +255,12 @@ static int s3c24xx_i2s_hw_params(struct snd_pcm_substream *substream,
 	gpeup = readl(S3C2410_GPEUP)& ~(0x3ff);
 	gpeup |= 0x1f;
 	writel(gpeup, S3C2410_GPEUP);
-
+#endif
 
 	if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK)
 		dma_data = &s3c24xx_i2s_pcm_stereo_out;
 	else
 		dma_data = &s3c24xx_i2s_pcm_stereo_in;
-
 
 	snd_soc_dai_set_dma_data(rtd->cpu_dai, substream, dma_data);
 
@@ -252,20 +269,33 @@ static int s3c24xx_i2s_hw_params(struct snd_pcm_substream *substream,
 	iismod = readl(s3c24xx_i2s.regs + S3C2410_IISMOD);
 	iisfcon = readl(s3c24xx_i2s.regs + S3C2416_IISFIC);
 
-
 	//TXR
 	iismod &= ~S3C2416_IISMOD_MODE_MASK;
 	iismod |= S3C2416_IISMOD_TXRXMODE; //Transmit and receive simultaneous mode
 
 
-	//BLC
-	iismod &=~S3C2416_IISMOD_BLC_MASK;
-	iismod |= S3C2416_IISMOD_BLC_16BITS;//UDA1431 supports 8bit 16bit 20bit
-//	iismod |= S3C2416_IISMOD_BLC_8BITS;//UDA1431 supports 8bit 16bit 20bit
-
 	iisfcon |= S3C2416_IIS_TX_FLUSH; //TX FIFO flush command
 	iisfcon |= S3C2416_IIS_RX_FLUSH; //RX FIFO flush command
-
+#if 0    
+	switch (params_format(params)) {
+	case SNDRV_PCM_FORMAT_S8:
+        iismod &=~S3C2416_IISMOD_BLC_MASK;
+        iismod |= S3C2416_IISMOD_BLC_8BITS;//UDA1431 supports 8bit 16bit 20bit
+        dma_data->dma_size = 1;
+		break;
+	case SNDRV_PCM_FORMAT_S16_LE:
+         iismod &=~S3C2416_IISMOD_BLC_MASK;
+         iismod |= S3C2416_IISMOD_BLC_16BITS;//UDA1431 supports 8bit 16bit 20bit
+         dma_data->dma_size = 2;
+		break;
+	default:
+		return -EINVAL;
+	}
+#endif
+    iismod &=~S3C2416_IISMOD_BLC_MASK;
+    iismod |= S3C2416_IISMOD_BLC_16BITS;//UDA1431 supports 8bit 16bit 20bit
+    dma_data->dma_size = 2;
+    
 	writel(iiscon, s3c24xx_i2s.regs + S3C2410_IISCON);
 	writel(iismod, s3c24xx_i2s.regs + S3C2410_IISMOD);
 	writel(iisfcon, s3c24xx_i2s.regs + S3C2416_IISFIC);
@@ -284,7 +314,7 @@ static int s3c24xx_i2s_trigger(struct snd_pcm_substream *substream, int cmd,
 	struct s3c_dma_params *dma_data =
 		snd_soc_dai_get_dma_data(dai, substream);
 
-	pr_debug("Entered %s\n", __func__);
+	DBG("Entered %s\n", __func__);
 
 	switch (cmd) {
 	case SNDRV_PCM_TRIGGER_START:
@@ -300,7 +330,6 @@ static int s3c24xx_i2s_trigger(struct snd_pcm_substream *substream, int cmd,
 			s3c24xx_snd_rxctrl(1);
 		else
 			s3c24xx_snd_txctrl(1);
-
 		s3c2410_dma_ctrl(dma_data->channel, S3C2410_DMAOP_STARTED);
 		break;
 	case SNDRV_PCM_TRIGGER_STOP:
@@ -328,7 +357,7 @@ static int s3c24xx_i2s_set_sysclk(struct snd_soc_dai *cpu_dai,
 {
 	u32 iismod = readl(s3c24xx_i2s.regs + S3C2410_IISMOD);
 
-	pr_debug("Entered %s\n", __func__);
+	DBG("Entered %s\n", __func__);
 
 	//because we setting IIS works in master mode  
 	iismod &= ~S3C2416_IISMOD_CLK_MASK;
@@ -348,7 +377,7 @@ static int s3c24xx_i2s_set_clkdiv(struct snd_soc_dai *cpu_dai,
 {
 	u32 reg;
 
-	pr_debug("Entered %s\n", __func__);
+	DBG("Entered %s\n", __func__);
 
 	switch (div_id) {
 	case S3C24XX_DIV_BCLK: //setting BFS 
@@ -385,14 +414,13 @@ EXPORT_SYMBOL_GPL(s3c24xx_i2s_get_clockrate);
 
 static int s3c24xx_i2s_probe(struct snd_soc_dai *dai)
 {
-	pr_debug("Entered %s\n", __func__);
+	DBG("Entered %s\n", __func__);
 
 	s3c24xx_i2s.regs = ioremap(S3C2410_PA_IIS, 0x100);
 	if (s3c24xx_i2s.regs == NULL)
 		return -ENXIO;
 
 	s3c24xx_i2s.iis_clk = clk_get(dai->dev, "iis");
-
 	if (s3c24xx_i2s.iis_clk == NULL) {
 		pr_err("failed to get iis_clock\n");
 		iounmap(s3c24xx_i2s.regs);
@@ -407,7 +435,12 @@ static int s3c24xx_i2s_probe(struct snd_soc_dai *dai)
 	s3c2410_gpio_cfgpin(S3C2410_GPE2, S3C2410_GPE2_CDCLK);
 	s3c2410_gpio_cfgpin(S3C2410_GPE3, S3C2410_GPE3_I2SSDI);
 	s3c2410_gpio_cfgpin(S3C2410_GPE4, S3C2410_GPE4_I2SSDO);
-
+	s3c2410_gpio_pullup(S3C2410_GPE0, 0);
+	s3c2410_gpio_pullup(S3C2410_GPE1, 0);
+	s3c2410_gpio_pullup(S3C2410_GPE2, 0);
+	s3c2410_gpio_pullup(S3C2410_GPE3, 0);
+	s3c2410_gpio_pullup(S3C2410_GPE4, 0);
+    
 	writel(S3C2416_IISCON_I2SACTIVE, s3c24xx_i2s.regs + S3C2410_IISCON);
 
 	s3c24xx_snd_txctrl(0);
@@ -418,7 +451,7 @@ static int s3c24xx_i2s_probe(struct snd_soc_dai *dai)
 #ifdef CONFIG_PM
 static int s3c24xx_i2s_suspend(struct snd_soc_dai *cpu_dai)
 {
-	pr_debug("Entered %s\n", __func__);
+	DBG("Entered %s\n", __func__);
 
 	clk_disable(s3c24xx_i2s.iis_clk);
 
@@ -427,7 +460,7 @@ static int s3c24xx_i2s_suspend(struct snd_soc_dai *cpu_dai)
 
 static int s3c24xx_i2s_resume(struct snd_soc_dai *cpu_dai)
 {
-	pr_debug("Entered %s\n", __func__);
+	DBG("Entered %s\n", __func__);
 	clk_enable(s3c24xx_i2s.iis_clk);
 	return 0;
 }
