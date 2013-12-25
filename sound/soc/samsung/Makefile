@@ -1,4 +1,4 @@
-s3c2416-i2s.o_CFLAGS += -g -O0 -Wall -DDEBUG
+#s3c2416-i2s.o_CFLAGS += -g -O0 -Wall -DDEBUG
 #s3c24xx_uda134x.o_CFLAGS += -g -O0 -Wall -DDEBUG
 #pcm.o_CFLAGS += -g -O0 -Wall -DDEBUG
 # S3c24XX Platform Support

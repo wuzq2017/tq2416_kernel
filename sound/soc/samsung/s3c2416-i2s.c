@@ -29,7 +29,7 @@
 #include "dma.h"
 #include "s3c24xx-i2s.h"
 
-#define S3C24XX_I2S_DEBUG 1
+//#define S3C24XX_I2S_DEBUG 1
 #if S3C24XX_I2S_DEBUG
 #define DBG(x...) printk(KERN_DEBUG "s3c24xx-i2s: " x)
 #else
