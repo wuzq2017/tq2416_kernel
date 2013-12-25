@@ -635,6 +635,22 @@ static struct s3c_sdhci_platdata tq2416_hsmmc1_pdata __initdata = {
 	.get_ro			= sdhci1_get_ro,
 };
 #endif /* CONFIG_S3C_DEV_HSMMC1 */
+
+static struct s3c2410_platform_i2c tq2416_i2c0_data  __initdata = {
+	.flags = 0,
+//	.slave_addr = 0x20,
+	.frequency = 15 * 1000,
+	.sda_delay = 0x05,
+	//.sda_delay = S3C2410_IICLC_SDA_DELAY5 | S3C2410_IICLC_FILTER_ON
+};
+
+static struct i2c_board_info tq2416_i2c_devs[] __initdata  = {
+    {
+        I2C_BOARD_INFO("pcf8574", 0x20),
+//        .platform_data = pcf8574_data,
+    },
+};
+
 static struct platform_device *tq2416_devices[] __initdata = {
 //	&s3c_device_fb,
 	&s3c_device_wdt,
@@ -683,7 +699,6 @@ static void __init tq2416_map_io(void)
 
 static void __init tq2416_machine_init(void)
 {
-	s3c_i2c0_set_platdata(NULL);
 //	s3c_fb_set_platdata(&tq2416_fb_platdata);
 	//sd card data
 #ifdef CONFIG_S3C_DEV_HSMMC
@@ -721,6 +736,10 @@ static void __init tq2416_machine_init(void)
 	s3c_gpio_cfgpin(S3C2410_GPA(13), (1<<13));// GPA13 to nRCS2
 	tq2416_srom_init();
 #endif /* CONFIG_DM9000 */
+    
+//	s3c_i2c0_set_platdata(&tq2416_i2c0_data);
+    s3c_i2c0_set_platdata(NULL);
+    i2c_register_board_info(0, tq2416_i2c_devs,ARRAY_SIZE(tq2416_i2c_devs));
 
 	platform_add_devices(tq2416_devices, ARRAY_SIZE(tq2416_devices));
 	tq_machine_init();

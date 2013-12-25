@@ -24,7 +24,8 @@
 #include <linux/i2c.h>
 #include <linux/i2c/pcf857x.h>
 
-
+//#define dbg(args...) printk(args)
+#define dbg(args...) 
 static const struct i2c_device_id pcf857x_id[] = {
 	{ "pcf8574", 8 },
 	{ "pcf8574a", 8 },
@@ -186,7 +187,7 @@ static int pcf857x_probe(struct i2c_client *client,
 	struct pcf857x_platform_data	*pdata;
 	struct pcf857x			*gpio;
 	int				status;
-
+    dbg("++++++++++++++++++++%s:%d\n", __func__, __LINE__);
 	pdata = client->dev.platform_data;
 	if (!pdata) {
 		dev_dbg(&client->dev, "no platform data\n");
@@ -309,6 +310,7 @@ static int pcf857x_probe(struct i2c_client *client,
 	return 0;
 
 fail:
+    dbg("++++++++++++++++++++%s:%d fail.\n",__func__, __LINE__);
 	dev_dbg(&client->dev, "probe error %d for '%s'\n",
 			status, client->name);
 	kfree(gpio);
@@ -320,7 +322,8 @@ static int pcf857x_remove(struct i2c_client *client)
 	struct pcf857x_platform_data	*pdata = client->dev.platform_data;
 	struct pcf857x			*gpio = i2c_get_clientdata(client);
 	int				status = 0;
-
+    
+    dbg("++++++++++++++++++++%s\n", __func__);
 	if (pdata && pdata->teardown) {
 		status = pdata->teardown(client,
 				gpio->chip.base, gpio->chip.ngpio,
