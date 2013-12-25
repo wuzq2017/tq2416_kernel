@@ -246,7 +246,7 @@ static void __init tq2416_srom_init(void)
 	*(volatile unsigned int *)S3C2416_SMBCR(4) = (*(volatile unsigned int *)S3C2416_SMBCR(4)) & (~((3<<20)|(3<<12)));
 	*(volatile unsigned int *)S3C2416_SMBCR(4) = (*(volatile unsigned int *)S3C2416_SMBCR(4)) & (~(3<<4));
 	*(volatile unsigned int *)S3C2416_SMBCR(4) = (*(volatile unsigned int *)S3C2416_SMBCR(4)) | (1<<4);
-
+#ifdef CONFIG_ETH2
         /* init bus for dm9000-2 CS2 */
     	*(volatile unsigned int *)S3C2416_EBI_BANKCFG &= ~((1<<8)|(1<<9)|(1<<10));
 	*(volatile unsigned int *)S3C2416_SMBIDCYR(2) = 0xF;
@@ -259,7 +259,7 @@ static void __init tq2416_srom_init(void)
 	*(volatile unsigned int *)S3C2416_SMBCR(2) = (*(volatile unsigned int *)S3C2416_SMBCR(2)) & (~((3<<20)|(3<<12)));
 	*(volatile unsigned int *)S3C2416_SMBCR(2) = (*(volatile unsigned int *)S3C2416_SMBCR(2)) & (~(3<<4));
 	*(volatile unsigned int *)S3C2416_SMBCR(2) = (*(volatile unsigned int *)S3C2416_SMBCR(2)) | (1<<4);
-
+#endif
 }
 #endif /* CONFIG_DM9000 */
 
@@ -640,7 +640,7 @@ static struct s3c_sdhci_platdata tq2416_hsmmc1_pdata __initdata = {
 static struct s3c2410_platform_i2c tq2416_i2c0_data  __initdata = {
 	.flags = 0,
 //	.slave_addr = 0x20,
-	.frequency = 15 * 1000,
+	.frequency = 10 * 1000,
 	.sda_delay = 0x05,
 	//.sda_delay = S3C2410_IICLC_SDA_DELAY5 | S3C2410_IICLC_FILTER_ON
 };
@@ -733,10 +733,12 @@ static void __init tq2416_machine_init(void)
 
 #ifdef CONFIG_DM9000
     gpio_request(S3C2410_GPA(15), "nRCS4");
-	s3c_gpio_cfgpin(S3C2410_GPA(15), (1<<15));// GPA15 to nRCS4 
+	s3c_gpio_cfgpin(S3C2410_GPA(15), (1<<15));// GPA15 to nRCS4
+#ifdef CONFIG_ETH2    
     /* GPA13 nRCS2 */
     gpio_request(S3C2410_GPA(13), "nRCS2");
 	s3c_gpio_cfgpin(S3C2410_GPA(13), (1<<13));// GPA13 to nRCS2
+#endif    
 	tq2416_srom_init();
 #endif /* CONFIG_DM9000 */
     
