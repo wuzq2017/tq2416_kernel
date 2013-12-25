@@ -418,11 +418,11 @@ static struct platform_device uda1341_codec = {
 #elif defined(CONFIG_FB_S3C_VGA640480)
 #define S3CFB_HFP			16	/* front porch */
 #define S3CFB_HSW			10	/* hsync width */
-#define S3CFB_HBP			144	/* back porch */
+#define S3CFB_HBP			134	/* back porch */
 
 #define S3CFB_VFP			32	/* front porch */
 #define S3CFB_VSW			2	/* vsync width */
-#define S3CFB_VBP			13	/* back porch */
+#define S3CFB_VBP			11	/* back porch */
 
 #define S3CFB_HRES			640	/* horizon pixel  x resolition */
 #define S3CFB_VRES			480	/* line cnt       y resolution */
@@ -435,7 +435,7 @@ static struct platform_device uda1341_codec = {
 
 #define S3CFB_VFRAME_FREQ	60	/* frame rate freq */
 
-#define S3CFB_PIXEL_CLOCK	4//(S3CFB_VFRAME_FREQ * (S3CFB_HFP + S3CFB_HSW + S3CFB_HBP + S3CFB_HRES) * (S3CFB_VFP + S3CFB_VSW + S3CFB_VBP + S3CFB_VRES))
+#define S3CFB_PIXEL_CLOCK	5//(S3CFB_VFRAME_FREQ * (S3CFB_HFP + S3CFB_HSW + S3CFB_HBP + S3CFB_HRES) * (S3CFB_VFP + S3CFB_VSW + S3CFB_VBP + S3CFB_VRES))
 #define LCD_TYPE			"VGA 640*480"
 
 #elif defined(CONFIG_FB_S3C_VGA800600)
@@ -515,10 +515,11 @@ struct s3c_fb_pd_win tq2416_fb_win[] = {
 		/* think this is the same as the tq6410 */
 		.win_mode	= {
 			.pixclock		= S3CFB_PIXEL_CLOCK,
-			.left_margin	= S3CFB_HFP,	/* for HFPD*/
-			.right_margin	= S3CFB_HBP,	/* for HBPD*/
-			.upper_margin	= S3CFB_VFP,	/* for VFPD*/
-			.lower_margin	= S3CFB_VBP,	/* for VBPD*/
+
+			.left_margin	= S3CFB_HBP,	/* for HBPD*/
+			.right_margin	= S3CFB_HFP,	/* for HFPD*/
+			.upper_margin	= S3CFB_VBP,	/* for VBPD*/
+			.lower_margin	= S3CFB_VFP,	/* for VFPD*/
 			.hsync_len		= S3CFB_HSW,	/* for HSPW*/
 			.vsync_len		= S3CFB_VSW,	/* for VSPW*/
 
@@ -652,7 +653,7 @@ static struct i2c_board_info tq2416_i2c_devs[] __initdata  = {
 };
 
 static struct platform_device *tq2416_devices[] __initdata = {
-//	&s3c_device_fb,
+	&s3c_device_fb,
 	&s3c_device_wdt,
 	&s3c_device_i2c0,
 #ifdef CONFIG_S3C_DEV_USB_HOST
@@ -688,6 +689,8 @@ static struct platform_device *tq2416_devices[] __initdata = {
 #ifdef  CONFIG_KEYBOARD_TQ2416
 	&s3c_device_gpio_button,//for 6 buttons
 #endif
+    &s3c_device_timer[0],       /*for beeper*/
+
 };
 
 static void __init tq2416_map_io(void)
@@ -737,8 +740,8 @@ static void __init tq2416_machine_init(void)
 	tq2416_srom_init();
 #endif /* CONFIG_DM9000 */
     
-//	s3c_i2c0_set_platdata(&tq2416_i2c0_data);
-    s3c_i2c0_set_platdata(NULL);
+	s3c_i2c0_set_platdata(&tq2416_i2c0_data);
+//    s3c_i2c0_set_platdata(NULL);
     i2c_register_board_info(0, tq2416_i2c_devs,ARRAY_SIZE(tq2416_i2c_devs));
 
 	platform_add_devices(tq2416_devices, ARRAY_SIZE(tq2416_devices));

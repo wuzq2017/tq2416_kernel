@@ -238,6 +238,13 @@ config BACKLIGHT_PWM
 	  If you have a LCD backlight adjustable by PWM, say Y to enable
 	  this driver.
 
+config TQ2416_PWM
+	tristate "S3C2416 PWM based Backlight Driver"
+	depends on MACH_TQ2416
+	help
+	  If you have a s3c2416 LCD backlight adjustable by PWM, say Y to enable
+	  this driver.
+      
 config BACKLIGHT_DA903X
 	tristate "Backlight Driver for DA9030/DA9034 using WLED"
 	depends on PMIC_DA903X
