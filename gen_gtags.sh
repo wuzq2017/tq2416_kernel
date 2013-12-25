@@ -1,4 +1,6 @@
 #!/bin/bash
+#
+#
 KERNEL=$PWD
 echo "kernel dir: $KERNEL"
 # find 用法
