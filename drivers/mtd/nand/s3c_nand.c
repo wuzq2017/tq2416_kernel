@@ -784,17 +784,25 @@ static int s3c_nand_add_partition(struct s3c_nand_info *info,
 {
 	struct mtd_partition *part_info;
 	int nr_part = 0;
+	const char *part_type = 0;
 
 	if (set == NULL)
 		return mtd_device_register(&mtd->mtd, NULL, 0);
 
 	mtd->mtd.name = set->name;
 	nr_part = parse_mtd_partitions(&mtd->mtd, part_probes, &part_info, 0);
+	if (nr_part > 0)
+		part_type = "command line";
+	else
+		nr_part = 0;
 
 	if (nr_part <= 0 && set->nr_partitions > 0) {
 		nr_part = set->nr_partitions;
 		part_info = set->partitions;
+        part_type = "static";
 	}
+    
+	printk(KERN_NOTICE "Using %s partition definition\n", part_type);
 
 	return mtd_device_register(&mtd->mtd, part_info, nr_part);
 }

@@ -49,6 +49,12 @@
 #define CARDNAME	"dm9000"
 #define DRV_VERSION	"1.31"
 
+//#define DEBUG
+#ifdef DEBUG
+#define dbg(args...) printk(args)
+#else
+#define dbg(args...) 
+#endif
 /*
  * Transmit timeout, default 5 seconds.
  */
@@ -299,8 +305,10 @@ static void dm9000_set_io(struct board_info *db, int byte_width)
 
 static void dm9000_schedule_poll(board_info_t *db)
 {
-	if (db->type == TYPE_DM9000E)
+	if (db->type == TYPE_DM9000E ){
+        dbg("++++++++++++++++++++dm9000 link check.\n");
 		schedule_delayed_work(&db->phy_poll, HZ * 2);
+    }
 }
 
 static int dm9000_ioctl(struct net_device *dev, struct ifreq *req, int cmd)
@@ -779,8 +787,11 @@ dm9000_init_dm9000(struct net_device *dev)
 		
 		dm9000_phy_write(dev, 0, MII_BMCR, BMCR_RESET);	/* PHY RESET */
 		udelay(100);
-		if(TYPE_DM9000C == db->type)
-			dm9000_phy_write(dev, 0, 0x1b, 0xe100);
+		if(TYPE_DM9000C == db->type){
+            dm9000_phy_write(dev, 0, 0x1b, 0xe100);
+            dbg("++++++++++++++++++++%s: DM9000C special regs 0x1B",__func__);
+        }
+
 //		dm9000_phy_write(dev, 0, 0x14, 0x0200);
 		
 		iow(db, DM9000_GPR, 0);	/* Enable PHY */
@@ -1136,6 +1147,7 @@ static irqreturn_t dm9000_interrupt(int irq, void *dev_id)
 
 	if (db->type != TYPE_DM9000E) {
 		if (int_status & ISR_LNKCHNG) {
+            dbg("++++++++++++++++++++dm9000 link stat changed.\n");
 			/* fire a link-change request */
 			schedule_delayed_work(&db->phy_poll, 1);
 		}
@@ -1575,7 +1587,7 @@ dm9000_probe(struct platform_device *pdev)
 	/* I/O mode */
 	db->io_mode = ior(db, DM9000_ISR) >> 6;	/* ISR bit7:6 keeps I/O mode */
 
-	id_val = ior(db, DM9000_CHIPR);
+	id_val = ior(db, DM9000_CHIPR); /*chip revision reg*/
 //	dev_dbg(db->dev, "dm9000 revision 0x%02x  io_mode %02x \n", id_val, db->io_mode);
 	printk(KERN_INFO "dm9000 revision 0x%02x  io_mode %02x \n", id_val, db->io_mode);
 
@@ -1585,6 +1597,7 @@ dm9000_probe(struct platform_device *pdev)
 		break;
 	case 0x1a:
 		db->type = TYPE_DM9000C;
+        dbg("++++++++++++++++++++DM9000C");
 		break;
 	default:
 		dev_dbg(db->dev, "ID %02x => defaulting to DM9000E\n", id_val);

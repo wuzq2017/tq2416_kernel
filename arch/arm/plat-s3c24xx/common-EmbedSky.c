@@ -135,7 +135,7 @@ static struct mtd_partition tq_default_nand_part[] = {
 
 static struct s3c2410_nand_set tq_nand_sets[] = {
 	[0] = {
-		.name		= "NAND",
+		.name		= "nandflash0",
 		.nr_chips	= 1,
 		.nr_partitions	= ARRAY_SIZE(tq_default_nand_part),
 		.partitions	= tq_default_nand_part,

@@ -1,7 +1,7 @@
 #
 # Makefile for the memory technology device drivers.
 #
-
+EXTRA_CFLAGS += -g -Wall -O0
 # Core functionality.
 obj-$(CONFIG_MTD)		+= mtd.o
 mtd-y				:= mtdcore.o mtdsuper.o mtdconcat.o mtdpart.o

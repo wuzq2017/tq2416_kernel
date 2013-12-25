@@ -814,6 +814,7 @@ static __always_inline bool __is_kfree_rcu_offset(unsigned long offset)
 	return offset < 4096;
 }
 
+#if 0
 static __always_inline
 void __kfree_rcu(struct rcu_head *head, unsigned long offset)
 {
@@ -826,6 +827,17 @@ void __kfree_rcu(struct rcu_head *head, unsigned long offset)
 
 	call_rcu(head, (rcu_callback)offset);
 }
+#else
+
+#define  __kfree_rcu(head,offset)    do{        \
+        typedef void (*rcu_callback)(struct rcu_head *);    \
+        BUILD_BUG_ON(!__builtin_constant_p(offset));        \
+        BUILD_BUG_ON(!__is_kfree_rcu_offset(offset));       \
+        call_rcu(head, (rcu_callback)offset);               \
+    }while(0)
+                                         
+#endif
+
 
 extern void kfree(const void *);
 

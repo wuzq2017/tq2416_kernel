@@ -160,6 +160,7 @@ struct s3c24xx_hsudc_platdata tq2416_hsudc_platdata = {
 
 #ifdef CONFIG_DM9000
 #define MACH_TQ2416_DM9K_BASE		(S3C2410_CS4 + 0x300)
+#define MACH_TQ2416_DM9K2_BASE		(S3C2410_CS2 + 0x300)
 /* DM9000AEP 10/100 ethernet controller */
 
 static struct resource tq2416_dm9k_resource[] = {
@@ -180,6 +181,24 @@ static struct resource tq2416_dm9k_resource[] = {
 	}
 };
 
+static struct resource tq2416_dm9k2_resource[] = {
+	[0] = {
+		.start = MACH_TQ2416_DM9K2_BASE,
+		.end   = MACH_TQ2416_DM9K2_BASE + 3,
+		.flags = IORESOURCE_MEM
+	},
+	[1] = {
+		.start = MACH_TQ2416_DM9K2_BASE + 8,
+		.end   = MACH_TQ2416_DM9K2_BASE + 8 + 3,
+		.flags = IORESOURCE_MEM
+	},
+	[2] = {
+		.start = IRQ_EINT13,
+		.end   = IRQ_EINT13,
+		.flags = IORESOURCE_IRQ | IORESOURCE_IRQ_HIGHEDGE,
+	}
+};
+
 /*
  * The DM9000 has no eeprom, and it's MAC address is set by
  * the bootloader before starting the kernel.
@@ -188,9 +207,13 @@ static struct dm9000_plat_data tq2416_dm9k_pdata = {
 	.flags		= (DM9000_PLATF_16BITONLY | DM9000_PLATF_NO_EEPROM),
 };
 
+static struct dm9000_plat_data tq2416_dm9k2_pdata = {
+	.flags		= (DM9000_PLATF_16BITONLY | DM9000_PLATF_NO_EEPROM),
+};
+
 static struct platform_device tq2416_device_eth = {
 	.name		= "dm9000",
-	.id		= -1,
+	.id		= 0,
 	.num_resources	= ARRAY_SIZE(tq2416_dm9k_resource),
 	.resource	= tq2416_dm9k_resource,
 	.dev		= {
@@ -198,9 +221,20 @@ static struct platform_device tq2416_device_eth = {
 	},
 };
 
+static struct platform_device tq2416_device_eth2 = {
+	.name		= "dm9000",
+	.id		= 1,
+	.num_resources	= ARRAY_SIZE(tq2416_dm9k2_resource),
+	.resource	= tq2416_dm9k2_resource,
+	.dev		= {
+		.platform_data	= &tq2416_dm9k2_pdata,
+	},
+};
+
 //初始化总线
 static void __init tq2416_srom_init(void)
 {
+    /* init bus for dm9000-1 CS4 */
 	*(volatile unsigned int *)S3C2416_EBI_BANKCFG &= ~((1<<8)|(1<<9)|(1<<10));
 	*(volatile unsigned int *)S3C2416_SMBIDCYR(4) = 0xF;
 	*(volatile unsigned int *)S3C2416_SMBWSTRDR(4) = 12;
@@ -212,6 +246,20 @@ static void __init tq2416_srom_init(void)
 	*(volatile unsigned int *)S3C2416_SMBCR(4) = (*(volatile unsigned int *)S3C2416_SMBCR(4)) & (~((3<<20)|(3<<12)));
 	*(volatile unsigned int *)S3C2416_SMBCR(4) = (*(volatile unsigned int *)S3C2416_SMBCR(4)) & (~(3<<4));
 	*(volatile unsigned int *)S3C2416_SMBCR(4) = (*(volatile unsigned int *)S3C2416_SMBCR(4)) | (1<<4);
+
+        /* init bus for dm9000-2 CS2 */
+    	*(volatile unsigned int *)S3C2416_EBI_BANKCFG &= ~((1<<8)|(1<<9)|(1<<10));
+	*(volatile unsigned int *)S3C2416_SMBIDCYR(2) = 0xF;
+	*(volatile unsigned int *)S3C2416_SMBWSTRDR(2) = 12;
+	*(volatile unsigned int *)S3C2416_SMBWSTWRR(2) = 12;
+	*(volatile unsigned int *)S3C2416_SMBWSTOENR(2) = 2;
+	*(volatile unsigned int *)S3C2416_SMBWSTWENR(2) = 2;
+	*(volatile unsigned int *)S3C2416_SMBCR(2) = (*(volatile unsigned int *)S3C2416_SMBCR(2)) | ((1<<15)|(1<<7));
+	*(volatile unsigned int *)S3C2416_SMBCR(2) = (*(volatile unsigned int *)S3C2416_SMBCR(2)) | ((1<<2)|(1<<0));
+	*(volatile unsigned int *)S3C2416_SMBCR(2) = (*(volatile unsigned int *)S3C2416_SMBCR(2)) & (~((3<<20)|(3<<12)));
+	*(volatile unsigned int *)S3C2416_SMBCR(2) = (*(volatile unsigned int *)S3C2416_SMBCR(2)) & (~(3<<4));
+	*(volatile unsigned int *)S3C2416_SMBCR(2) = (*(volatile unsigned int *)S3C2416_SMBCR(2)) | (1<<4);
+
 }
 #endif /* CONFIG_DM9000 */
 
@@ -588,7 +636,7 @@ static struct s3c_sdhci_platdata tq2416_hsmmc1_pdata __initdata = {
 };
 #endif /* CONFIG_S3C_DEV_HSMMC1 */
 static struct platform_device *tq2416_devices[] __initdata = {
-	&s3c_device_fb,
+//	&s3c_device_fb,
 	&s3c_device_wdt,
 	&s3c_device_i2c0,
 #ifdef CONFIG_S3C_DEV_USB_HOST
@@ -616,6 +664,7 @@ static struct platform_device *tq2416_devices[] __initdata = {
 #endif
 #ifdef CONFIG_DM9000
 	&tq2416_device_eth,
+    &tq2416_device_eth2,
 #endif
 #ifdef CONFIG_RTC_DRV_S3C
 	&s3c_device_rtc,
@@ -635,7 +684,7 @@ static void __init tq2416_map_io(void)
 static void __init tq2416_machine_init(void)
 {
 	s3c_i2c0_set_platdata(NULL);
-	s3c_fb_set_platdata(&tq2416_fb_platdata);
+//	s3c_fb_set_platdata(&tq2416_fb_platdata);
 	//sd card data
 #ifdef CONFIG_S3C_DEV_HSMMC
 	s3c_sdhci0_set_platdata(&tq2416_hsmmc0_pdata);
@@ -663,10 +712,13 @@ static void __init tq2416_machine_init(void)
 	gpio_request(S3C2410_GPC(0), "backlight");
 	gpio_direction_output(S3C2410_GPC(0), 1);
 	
-	gpio_request(S3C2410_GPA(15), "nRCS4");
-	s3c_gpio_cfgpin(S3C2410_GPA(15), (1<<15));// GPA15 to nRCS4 
 
 #ifdef CONFIG_DM9000
+    gpio_request(S3C2410_GPA(15), "nRCS4");
+	s3c_gpio_cfgpin(S3C2410_GPA(15), (1<<15));// GPA15 to nRCS4 
+    /* GPA13 nRCS2 */
+    gpio_request(S3C2410_GPA(13), "nRCS2");
+	s3c_gpio_cfgpin(S3C2410_GPA(13), (1<<13));// GPA13 to nRCS2
 	tq2416_srom_init();
 #endif /* CONFIG_DM9000 */
 

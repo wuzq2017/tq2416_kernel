@@ -16,7 +16,7 @@ echo "kernel dir: $KERNEL"
 # 注意net/* 和直接net*写法
 find  "$KERNEL"        \
     -path "$KERNEL/arch/*" ! -path "$KERNEL/arch/arm*" -prune -o               \
-    -path "$KERNEL/arch/arm/mach-*" ! -path "$KERNEL/arch/arm/mach-at91*" \
+    -path "$KERNEL/arch/arm/mach-*" ! -path "$KERNEL/arch/arm/mach-s3c2416*" \
     ! -path "$KERNEL/arch/arm/mach-godarm*" -prune -o \
     -path "$KERNEL/arch/arm/plat-*" ! -path "$KERNEL/arch/arm/plat-s3c24xx*" -prune -o\
 	-path "$KERNEL/tmp*" -prune -o                                           \
@@ -32,6 +32,10 @@ find  "$KERNEL"        \
     -path "$KERNEL/net*" -prune -o   \
     -path "$KERNEL/security*" -prune -o   \
     -path "$KERNEL/samples*" -prune -o   \
+    -path "$KERNEL/mm*" -prune -o   \
+    -path "$KERNEL/block*" -prune -o   \
+    -path "$KERNEL/firmware*" -prune -o   \
+    -path "$KERNEL/lib*" -prune -o   \
     -name "*.[chxsS]" -print > $KERNEL/gtags.files 
 
 echo "Generated gtags.file."
