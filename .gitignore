@@ -85,7 +85,7 @@ GTAGS
 
 *.fw
 
-/sound
+
 /security
 /usr
 /virt
