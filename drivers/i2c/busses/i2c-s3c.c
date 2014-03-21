@@ -492,7 +492,7 @@ static int s3c24xx_i2c_doxfer(struct s3c24xx_i2c *i2c,
 	if (ret != 0) {
 		dev_err(i2c->dev, "cannot get bus (error %d)\n", ret);
 		ret = -EAGAIN;
-		goto out;
+//		goto out;
 	}
 
 	spin_lock_irq(&i2c->lock);
