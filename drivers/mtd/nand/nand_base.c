@@ -2991,7 +2991,7 @@ static struct nand_flash_dev *nand_get_flash_type(struct mtd_info *mtd,
 		 * to decide what to do.
 		 */
 		if (id_data[0] == id_data[6] && id_data[1] == id_data[7] &&
-				id_data[0] == NAND_MFR_SAMSUNG &&
+				((id_data[0] == NAND_MFR_SAMSUNG) || (id_data[0] == NAND_MFR_SPANSION)) &&
 				(chip->cellinfo & NAND_CI_CELLTYPE_MSK) &&
 				id_data[5] != 0x00) {
 			/* Calc pagesize */
@@ -3060,7 +3060,7 @@ static struct nand_flash_dev *nand_get_flash_type(struct mtd_info *mtd,
 	/* Check if chip is a not a samsung device. Do not clear the
 	 * options for chips which are not having an extended id.
 	 */
-	if (*maf_id != NAND_MFR_SAMSUNG && !type->pagesize)
+	if ((*maf_id != NAND_MFR_SAMSUNG) && (*maf_id != NAND_MFR_SPANSION) && !type->pagesize)
 		chip->options &= ~NAND_SAMSUNG_LP_OPTIONS;
 ident_done:
 
@@ -3120,12 +3120,14 @@ ident_done:
 	 */
 	if ((chip->cellinfo & NAND_CI_CELLTYPE_MSK) &&
 			(*maf_id == NAND_MFR_SAMSUNG ||
-			 *maf_id == NAND_MFR_HYNIX))
+			 *maf_id == NAND_MFR_HYNIX ||
+			 *maf_id == NAND_MFR_SPANSION))
 		chip->options |= NAND_BBT_SCANLASTPAGE;
 	else if ((!(chip->cellinfo & NAND_CI_CELLTYPE_MSK) &&
 				(*maf_id == NAND_MFR_SAMSUNG ||
 				 *maf_id == NAND_MFR_HYNIX ||
 				 *maf_id == NAND_MFR_TOSHIBA ||
+				 *maf_id == NAND_MFR_SPANSION ||
 				 *maf_id == NAND_MFR_AMD)) ||
 			(mtd->writesize == 2048 &&
 			 *maf_id == NAND_MFR_MICRON))
