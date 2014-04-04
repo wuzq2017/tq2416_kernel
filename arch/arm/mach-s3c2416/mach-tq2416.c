@@ -698,6 +698,7 @@ static void __init tq2416_map_io(void)
 	s3c24xx_init_io(tq2416_iodesc, ARRAY_SIZE(tq2416_iodesc));
 	s3c24xx_init_clocks(12000000);
 	s3c24xx_init_uarts(tq2416_uartcfgs, ARRAY_SIZE(tq2416_uartcfgs));
+    
 }
 
 static void __init tq2416_machine_init(void)
@@ -738,7 +739,12 @@ static void __init tq2416_machine_init(void)
     /* GPA13 nRCS2 */
     gpio_request(S3C2410_GPA(13), "nRCS2");
 	s3c_gpio_cfgpin(S3C2410_GPA(13), (1<<13));// GPA13 to nRCS2
-#endif    
+#endif
+
+    /* uart1 485 ,使能485控制引脚,GPA6 , 接收使能*/
+    gpio_request(S3C2410_GPA(6), "rs485-ctrl");
+    gpio_direction_output(S3C2410_GPA(6), 0);
+
 	tq2416_srom_init();
 #endif /* CONFIG_DM9000 */
     

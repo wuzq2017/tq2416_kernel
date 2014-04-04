@@ -51,7 +51,9 @@
 #include <plat/regs-serial.h>
 
 #include "samsung.h"
-
+#include <plat/gpio-cfg.h>
+#include <mach/regs-gpio.h>
+#include <mach/gpio-fns.h>
 /* UART name and device definitions */
 
 #define S3C24XX_SERIAL_NAME	"ttySAC"
@@ -65,7 +67,8 @@
 
 /* flag to ignore all characters coming in */
 #define RXSTAT_DUMMY_READ (0x10000000)
-
+static unsigned int s3c24xx_serial_tx_empty(struct uart_port *port);
+    
 static inline struct s3c24xx_uart_port *to_ourport(struct uart_port *port)
 {
 	return container_of(port, struct s3c24xx_uart_port, port);
@@ -130,6 +133,40 @@ static void s3c24xx_serial_stop_tx(struct uart_port *port)
 		tx_enabled(port) = 0;
 		if (port->flags & UPF_CONS_FLOW)
 			s3c24xx_serial_rx_enable(port);
+	}
+}
+
+static void s3c24xx_485_stop_tx(struct uart_port *port)
+{
+    int i =0;
+	struct s3c24xx_uart_port *ourport = to_ourport(port);
+
+	if (tx_enabled(port)) {
+		disable_irq_nosync(ourport->tx_irq);
+		tx_enabled(port) = 0;
+		if (port->flags & UPF_CONS_FLOW)
+			s3c24xx_serial_rx_enable(port);
+	}
+//    while(!s3c24xx_serial_tx_empty(port))
+//	{
+//	}
+    while(!(rd_regl(port, S3C2410_UTRSTAT) & S3C2410_UTRSTAT_TXE));
+//    printk("--------------------GPA6 is 0.\n");
+	s3c2410_gpio_setpin(S3C2410_GPA(6), 0);
+
+}
+
+static void s3c24xx_485_start_tx(struct uart_port *port)
+{
+	struct s3c24xx_uart_port *ourport = to_ourport(port);
+    s3c2410_gpio_setpin(S3C2410_GPA(6), 1);
+//    printk("--------------------GPA6 is 1.\n");
+	if (!tx_enabled(port)) {
+		if (port->flags & UPF_CONS_FLOW)
+			s3c24xx_serial_rx_disable(port);
+
+		enable_irq(ourport->tx_irq);
+		tx_enabled(port) = 1;
 	}
 }
 
@@ -276,6 +313,50 @@ s3c24xx_serial_rx_chars(int irq, void *dev_id)
 	return IRQ_HANDLED;
 }
 
+static irqreturn_t s3c24xx_485_tx_chars(int irq, void *id)
+{
+	struct s3c24xx_uart_port *ourport = id;
+	struct uart_port *port = &ourport->port;
+	struct circ_buf *xmit = &port->state->xmit;
+	int count = 256;
+
+	if (port->x_char) {
+		wr_regb(port, S3C2410_UTXH, port->x_char);
+		port->icount.tx++;
+		port->x_char = 0;
+		goto out;
+	}
+
+	/* if there isn't anything more to transmit, or the uart is now
+	 * stopped, disable the uart and exit
+	*/
+
+	if (uart_circ_empty(xmit) || uart_tx_stopped(port)) {
+		s3c24xx_485_stop_tx(port);
+		goto out;
+	}
+
+	/* try and drain the buffer... */
+
+	while (!uart_circ_empty(xmit) && count-- > 0) {
+		if (rd_regl(port, S3C2410_UFSTAT) & ourport->info->tx_fifofull)
+			break;
+
+		wr_regb(port, S3C2410_UTXH, xmit->buf[xmit->tail]);
+		xmit->tail = (xmit->tail + 1) & (UART_XMIT_SIZE - 1);
+		port->icount.tx++;
+	}
+
+	if (uart_circ_chars_pending(xmit) < WAKEUP_CHARS)
+		uart_write_wakeup(port);
+
+	if (uart_circ_empty(xmit))
+		s3c24xx_485_stop_tx(port);
+
+ out:
+	return IRQ_HANDLED;
+}
+
 static irqreturn_t s3c24xx_serial_tx_chars(int irq, void *id)
 {
 	struct s3c24xx_uart_port *ourport = id;
@@ -415,6 +496,53 @@ static int s3c24xx_serial_startup(struct uart_port *port)
 	tx_enabled(port) = 1;
 
 	ret = request_irq(ourport->tx_irq, s3c24xx_serial_tx_chars, 0,
+			  s3c24xx_serial_portname(port), ourport);
+
+	if (ret) {
+		printk(KERN_ERR "cannot get irq %d\n", ourport->tx_irq);
+		goto err;
+	}
+
+	ourport->tx_claimed = 1;
+
+	dbg("s3c24xx_serial_startup ok\n");
+
+	/* the port reset code should have done the correct
+	 * register setup for the port controls */
+
+	return ret;
+
+ err:
+	s3c24xx_serial_shutdown(port);
+	return ret;
+}
+
+
+static int s3c24xx_485_startup(struct uart_port *port)
+{
+	struct s3c24xx_uart_port *ourport = to_ourport(port);
+	int ret;
+
+	dbg("s3c24xx_serial_startup: port=%p (%08lx,%p)\n",
+	    port->mapbase, port->membase);
+
+	rx_enabled(port) = 1;
+
+	ret = request_irq(ourport->rx_irq, s3c24xx_serial_rx_chars, 0,
+			  s3c24xx_serial_portname(port), ourport);
+
+	if (ret != 0) {
+		printk(KERN_ERR "cannot get irq %d\n", ourport->rx_irq);
+		return ret;
+	}
+
+	ourport->rx_claimed = 1;
+
+	dbg("requesting tx irq...\n");
+
+	tx_enabled(port) = 1;
+
+	ret = request_irq(ourport->tx_irq, s3c24xx_485_tx_chars, 0,
 			  s3c24xx_serial_portname(port), ourport);
 
 	if (ret) {
@@ -879,6 +1007,26 @@ static struct uart_ops s3c24xx_serial_ops = {
 	.verify_port	= s3c24xx_serial_verify_port,
 };
 
+static struct uart_ops s3c24xx_485_ops = {
+	.pm		= s3c24xx_serial_pm,
+	.tx_empty	= s3c24xx_serial_tx_empty,
+	.get_mctrl	= s3c24xx_serial_get_mctrl,
+	.set_mctrl	= s3c24xx_serial_set_mctrl,
+	.stop_tx	= s3c24xx_485_stop_tx,
+	.start_tx	= s3c24xx_485_start_tx,
+	.stop_rx	= s3c24xx_serial_stop_rx,
+	.enable_ms	= s3c24xx_serial_enable_ms,
+	.break_ctl	= s3c24xx_serial_break_ctl,
+	.startup	= s3c24xx_485_startup,
+	.shutdown	= s3c24xx_serial_shutdown,
+	.set_termios	= s3c24xx_serial_set_termios,
+	.type		= s3c24xx_serial_type,
+	.release_port	= s3c24xx_serial_release_port,
+	.request_port	= s3c24xx_serial_request_port,
+	.config_port	= s3c24xx_serial_config_port,
+	.verify_port	= s3c24xx_serial_verify_port,
+};
+
 
 static struct uart_driver s3c24xx_uart_drv = {
 	.owner		= THIS_MODULE,
@@ -910,7 +1058,7 @@ static struct s3c24xx_uart_port s3c24xx_serial_ports[CONFIG_SERIAL_SAMSUNG_UARTS
 			.irq		= IRQ_S3CUART_RX1,
 			.uartclk	= 0,
 			.fifosize	= 16,
-			.ops		= &s3c24xx_serial_ops,
+			.ops		= &s3c24xx_485_ops,
 			.flags		= UPF_BOOT_AUTOCONF,
 			.line		= 1,
 		}
