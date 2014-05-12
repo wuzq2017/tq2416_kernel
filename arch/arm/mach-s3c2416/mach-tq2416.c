@@ -681,6 +681,9 @@ static struct platform_device *tq2416_devices[] __initdata = {
 #endif
 #ifdef CONFIG_DM9000
 	&tq2416_device_eth,
+
+#endif
+#ifdef CONFIG_ETH2
     &tq2416_device_eth2,
 #endif
 #ifdef CONFIG_RTC_DRV_S3C
@@ -689,7 +692,7 @@ static struct platform_device *tq2416_devices[] __initdata = {
 #ifdef  CONFIG_KEYBOARD_TQ2416
 	&s3c_device_gpio_button,//for 6 buttons
 #endif
-    &s3c_device_timer[0],       /*for beeper*/
+//    &s3c_device_timer[0],       /*for beeper*/
 
 };
 
