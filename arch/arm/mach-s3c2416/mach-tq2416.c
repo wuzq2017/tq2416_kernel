@@ -66,6 +66,8 @@
 #ifdef CONFIG_SND_SOC_SAMSUNG_S3C24XX_UDA134X
 #include <sound/s3c24xx_uda134x.h>
 #endif
+
+#define CONFIG_ETH2
 static struct map_desc tq2416_iodesc[] __initdata = {
 	/* ISA IO Space map (memory space selected by A24) */
 #if 0
@@ -692,7 +694,7 @@ static struct platform_device *tq2416_devices[] __initdata = {
 #ifdef  CONFIG_KEYBOARD_TQ2416
 	&s3c_device_gpio_button,//for 6 buttons
 #endif
-//    &s3c_device_timer[0],       /*for beeper*/
+    &s3c_device_timer[0],       /*for beeper*/
 
 };
 
@@ -738,19 +740,22 @@ static void __init tq2416_machine_init(void)
 #ifdef CONFIG_DM9000
     gpio_request(S3C2410_GPA(15), "nRCS4");
 	s3c_gpio_cfgpin(S3C2410_GPA(15), (1<<15));// GPA15 to nRCS4
+#endif /* CONFIG_DM9000 */
+    
 #ifdef CONFIG_ETH2    
     /* GPA13 nRCS2 */
     gpio_request(S3C2410_GPA(13), "nRCS2");
 	s3c_gpio_cfgpin(S3C2410_GPA(13), (1<<13));// GPA13 to nRCS2
 #endif
 
+#if defined CONFIG_DM9000 || defined CONFIG_ETH2
+	tq2416_srom_init();    
+#endif    
+    
     /* uart1 485 ,使能485控制引脚,GPA6 , 接收使能*/
     gpio_request(S3C2410_GPA(6), "rs485-ctrl");
     gpio_direction_output(S3C2410_GPA(6), 0);
 
-	tq2416_srom_init();
-#endif /* CONFIG_DM9000 */
-    
 	s3c_i2c0_set_platdata(&tq2416_i2c0_data);
 //    s3c_i2c0_set_platdata(NULL);
     i2c_register_board_info(0, tq2416_i2c_devs,ARRAY_SIZE(tq2416_i2c_devs));
