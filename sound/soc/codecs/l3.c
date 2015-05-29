@@ -73,10 +73,10 @@ int l3_write(struct l3_pins *adap, u8 addr, u8 *data, int len)
 
 	adap->setmode(0);
 	udelay(adap->mode_setup);
-	sendbyte(adap, addr);
+	sendbyte(adap, addr);  //L3 数据模式选择
 	udelay(adap->mode_hold);
 
-	sendbytes(adap, data, len);
+	sendbytes(adap, data, len); //L3 数据
 
 	adap->setclk(1);
 	adap->setdat(1);

@@ -270,7 +270,11 @@ static int uda134x_hw_params(struct snd_pcm_substream *substream,
 		printk(KERN_ERR "%s unsupported format\n", __func__);
 		return -EINVAL;
 	}
-
+//    uda134x_write(codec, UDA134X_EA000, 0x1F); /*ch1 mixer gain*/
+//    uda134x_write(codec, UDA134X_EA001, 0x1F); /*ch2 mixer gain*/
+//    printk("-----> Set mixer to 0dB\n");
+//    u8 status1_reg = uda134x_read_reg_cache(codec, UDA134X_STATUS1);
+//    uda134x_write(codec, UDA134X_STATUS1, status1_reg | (1<<5));/*6 dB switch on*/
 	uda134x_write(codec, UDA134X_STATUS0, hw_params);
 
 //    uda134x_write(codec, UDA134X_STATUS1, 0xc1);

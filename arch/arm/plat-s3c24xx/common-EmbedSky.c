@@ -112,19 +112,19 @@ static struct mtd_partition tq_default_nand_part[] = {
 		.name		= "Bootloader",
 		.offset		= 0,
 		.size		= 0x100000,
-		.mask_flags	= MTD_CAP_NANDFLASH,
+//		.mask_flags	= 0, //非只读
 	},
 	[1] = {
 		.name		= "LOGO",
 		.offset		= 0x100000,
 		.size		= 0x200000,
-		.mask_flags	= MTD_CAP_NANDFLASH,
+//		.mask_flags	= 0, //非只读
 	},
 	[2] = {
 		.name		= "Kernel",
 		.offset		= 0x300000,
 		.size		= 0x400000,
-		.mask_flags	= MTD_CAP_NANDFLASH,
+//		.mask_flags	= 0, //非只读
 	},
 	[3] = {
 		.name		= "ROOTFS",
