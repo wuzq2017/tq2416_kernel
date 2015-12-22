@@ -67,7 +67,7 @@
 #include <sound/s3c24xx_uda134x.h>
 #endif
 
-#define CONFIG_ETH2
+//#define CONFIG_ETH2
 static struct map_desc tq2416_iodesc[] __initdata = {
 	/* ISA IO Space map (memory space selected by A24) */
 #if 0
@@ -451,7 +451,6 @@ static struct platform_device uda1341_codec = {
 
 #define S3CFB_HRES			800	/* horizon pixel  x resolition */
 #define S3CFB_VRES			600	/* line cnt       y resolution */
-
 #define S3CFB_HRES_VIRTUAL	800	/* horizon pixel  x resolition */
 #define S3CFB_VRES_VIRTUAL	1200	/* line cnt       y resolution */
 

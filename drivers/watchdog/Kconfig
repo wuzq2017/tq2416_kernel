@@ -182,6 +182,16 @@ config S3C_WATCHDOG
 	  The driver can be built as a module by choosing M, and will
 	  be called s3c_wdt
 
+config SP706_WATCHDOG
+	tristate "sp706 Watchdog"
+	depends on ARCH_S3C24XX || HAVE_S3C_WATCHDOG
+	help
+	  Watchdog timer block in the Samsung SoCs. This will reboot
+	  the system when the timer expires with the watchdog enabled.
+
+	  The driver can be built as a module by choosing M, and will
+	  be called sp706-wdt
+
 config SA1100_WATCHDOG
 	tristate "SA1100/PXA2xx watchdog"
 	depends on ARCH_SA1100 || ARCH_PXA

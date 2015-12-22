@@ -651,15 +651,17 @@ dm9000_poll_work(struct work_struct *w)
 	struct delayed_work *dw = to_delayed_work(w);
 	board_info_t *db = container_of(dw, board_info_t, phy_poll);
 	struct net_device *ndev = db->ndev;
-
-	if (db->flags & DM9000_PLATF_SIMPLE_PHY &&
-	    !(db->flags & DM9000_PLATF_EXT_PHY)) {
+    dbg("---------->In %s\n", __FUNCTION__);
+//	if (db->flags & DM9000_PLATF_SIMPLE_PHY &&
+//	    !(db->flags & DM9000_PLATF_EXT_PHY)) {
+    if(1){
 		unsigned nsr = dm9000_read_locked(db, DM9000_NSR);
 		unsigned old_carrier = netif_carrier_ok(ndev) ? 1 : 0;
 		unsigned new_carrier;
 
 		new_carrier = (nsr & NSR_LINKST) ? 1 : 0;
-
+        dbg("----------> db->msg_enable=%x\n, old_carrier=%d, new_carrier=%d ", db->msg_enable, old_carrier,
+            new_carrier);
 		if (old_carrier != new_carrier) {
 			if (netif_msg_link(db))
 				dm9000_show_carrier(db, new_carrier, nsr);
@@ -669,9 +671,27 @@ dm9000_poll_work(struct work_struct *w)
 			else
 				netif_carrier_on(ndev);
 		}
-	} else
+	} else{
+        /*
+ NETIF_MSG_DRV           = 0x0001,
+1644         NETIF_MSG_PROBE         = 0x0002,
+1645         NETIF_MSG_LINK          = 0x0004,
+1646         NETIF_MSG_TIMER         = 0x0008,
+1647         NETIF_MSG_IFDOWN        = 0x0010,
+1648         NETIF_MSG_IFUP          = 0x0020,
+1649         NETIF_MSG_RX_ERR        = 0x0040,
+1650         NETIF_MSG_TX_ERR        = 0x0080,
+1651         NETIF_MSG_TX_QUEUED     = 0x0100,
+1652         NETIF_MSG_INTR          = 0x0200,
+1653         NETIF_MSG_TX_DONE       = 0x0400,
+1654         NETIF_MSG_RX_STATUS     = 0x0800,
+1655         NETIF_MSG_PKTDATA       = 0x1000,
+1656         NETIF_MSG_HW            = 0x2000,
+1657         NETIF_MSG_WOL           = 0x4000,
+        */
+        dbg("----------> mii_check_media(): db->msg_enable=%x\n", db->msg_enable);
 		mii_check_media(&db->mii, netif_msg_link(db), 0);
-	
+	}
 	if (netif_running(ndev))
 		dm9000_schedule_poll(db);
 }
@@ -1149,7 +1169,7 @@ static irqreturn_t dm9000_interrupt(int irq, void *dev_id)
 		if (int_status & ISR_LNKCHNG) {
             dbg("++++++++++++++++++++dm9000 link stat changed.\n");
 			/* fire a link-change request */
-			schedule_delayed_work(&db->phy_poll, 1);
+			schedule_delayed_work(&db->phy_poll, HZ * 1);
 		}
 	}
 
@@ -1220,9 +1240,10 @@ dm9000_open(struct net_device *dev)
 {
 	board_info_t *db = netdev_priv(dev);
 	unsigned long irqflags = db->irq_res->flags & IRQF_TRIGGER_MASK;
-
-	if (netif_msg_ifup(db))
-		dev_dbg(db->dev, "enabling %s\n", dev->name);
+    dbg("-----> %s \n", __FUNCTION__);
+	if (netif_msg_ifup(db)){
+		dbg("----->enabling %s\n", dev->name);
+    }
 
 	/* If there is no IRQ type specified, default to something that
 	 * may work, and tell the user that this is a problem */
@@ -1248,8 +1269,8 @@ dm9000_open(struct net_device *dev)
 
 	mii_check_media(&db->mii, netif_msg_link(db), 1);
 	netif_start_queue(dev);
-	
-	dm9000_schedule_poll(db);
+    schedule_delayed_work(&db->phy_poll, HZ * 1);
+//	dm9000_schedule_poll(db);
 
 	return 0;
 }
@@ -1440,7 +1461,7 @@ dm9000_probe(struct platform_device *pdev)
 
 	SET_NETDEV_DEV(ndev, &pdev->dev);
 
-	dev_dbg(&pdev->dev, "dm9000_probe()\n");
+	dbg("----->dm9000_probe()\n");
 
 	/* setup board info structure */
 	db = netdev_priv(ndev);
@@ -1594,10 +1615,11 @@ dm9000_probe(struct platform_device *pdev)
 	switch (id_val) {
 	case CHIPR_DM9000A:
 		db->type = TYPE_DM9000A;
+        dbg("++++++++++++++++++++DM9000A\n");
 		break;
 	case 0x1a:
 		db->type = TYPE_DM9000C;
-        dbg("++++++++++++++++++++DM9000C");
+        dbg("++++++++++++++++++++DM9000C\n");
 		break;
 	default:
 		dev_dbg(db->dev, "ID %02x => defaulting to DM9000E\n", id_val);
