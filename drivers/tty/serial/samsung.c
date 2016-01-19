@@ -146,25 +146,26 @@ static void s3c24xx_485_stop_tx(struct uart_port *port)
 		tx_enabled(port) = 0;
 		if (port->flags & UPF_CONS_FLOW)
 			s3c24xx_serial_rx_enable(port);
-	}
 //    while(!s3c24xx_serial_tx_empty(port))
 //	{
 //	}
-    while(!(rd_regl(port, S3C2410_UTRSTAT) & S3C2410_UTRSTAT_TXE));
+        while(!(rd_regl(port, S3C2410_UTRSTAT) & S3C2410_UTRSTAT_TXE));
 //    printk("--------------------GPA6 is 0.\n");
-	s3c2410_gpio_setpin(S3C2410_GPA(6), 0);
+        s3c2410_gpio_setpin(S3C2410_GPA(6), 0);        
+	}
+
 
 }
 
 static void s3c24xx_485_start_tx(struct uart_port *port)
 {
 	struct s3c24xx_uart_port *ourport = to_ourport(port);
-    s3c2410_gpio_setpin(S3C2410_GPA(6), 1);
-//    printk("--------------------GPA6 is 1.\n");
 	if (!tx_enabled(port)) {
 		if (port->flags & UPF_CONS_FLOW)
 			s3c24xx_serial_rx_disable(port);
-
+        
+        s3c2410_gpio_setpin(S3C2410_GPA(6), 1);
+//    printk("--------------------GPA6 is 1.\n");
 		enable_irq(ourport->tx_irq);
 		tx_enabled(port) = 1;
 	}
