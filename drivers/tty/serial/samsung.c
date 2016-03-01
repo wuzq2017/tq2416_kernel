@@ -65,10 +65,52 @@
 #define tx_enabled(port) ((port)->unused[0])
 #define rx_enabled(port) ((port)->unused[1])
 
+static struct workqueue_struct *uart_485_wq = NULL;
+
+static struct uart_485_data {
+    struct work_struct work;
+    long delay;
+    struct uart_port *port;
+
+}uart_485_data;
+
 /* flag to ignore all characters coming in */
 #define RXSTAT_DUMMY_READ (0x10000000)
 static unsigned int s3c24xx_serial_tx_empty(struct uart_port *port);
+
+
+static int uart_485_delay_wq(struct delayed_work *work)
+{
+    struct uart_port *port;
+    struct uart_485_data *uart_data = container_of(work, struct uart_485_data, work);
+    port = uart_data->port;
+
+    while(!(rd_regl(port, S3C2410_UTRSTAT) & S3C2410_UTRSTAT_TXE)){
+        udelay(100);
+    };
+//    printk("--------------------GPA6 is 0.\n");
+    s3c2410_gpio_setpin(S3C2410_GPA(6), 0);
     
+/*        
+
+          for(i = 0 ; i< 100 ; i++){
+          if(gpio_get_value(S5PV210_GPA0(6)) == 0){
+          mdelay(15);
+          gpio_set_value(S5PV210_GPA0(6), 1);
+          udelay(80);
+          //如果使能成功，跳出for
+          printk("enable rx , stat =%d\n", gpio_get_value(S5PV210_GPA0(6)));
+          if(gpio_get_value(S5PV210_GPA0(6)) == 1){
+          break;
+          }
+          }
+          }
+          printk("--------------------GPA0_6 is 1, enable rx , stat =%d\n", gpio_get_value(S5PV210_GPA0(6)));
+
+*/
+    return 1;
+}
+
 static inline struct s3c24xx_uart_port *to_ourport(struct uart_port *port)
 {
 	return container_of(port, struct s3c24xx_uart_port, port);
@@ -138,23 +180,27 @@ static void s3c24xx_serial_stop_tx(struct uart_port *port)
 
 static void s3c24xx_485_stop_tx(struct uart_port *port)
 {
-    int i =0;
+
 	struct s3c24xx_uart_port *ourport = to_ourport(port);
 
 	if (tx_enabled(port)) {
 		disable_irq_nosync(ourport->tx_irq);
 		tx_enabled(port) = 0;
-		if (port->flags & UPF_CONS_FLOW)
+		if (port->flags & UPF_CONS_FLOW){
 			s3c24xx_serial_rx_enable(port);
+        }
+        uart_485_data.port = port;
+        queue_work(uart_485_wq, &uart_485_data.work);       
+
+        /*
 //    while(!s3c24xx_serial_tx_empty(port))
 //	{
 //	}
-        while(!(rd_regl(port, S3C2410_UTRSTAT) & S3C2410_UTRSTAT_TXE));
-//    printk("--------------------GPA6 is 0.\n");
-        s3c2410_gpio_setpin(S3C2410_GPA(6), 0);        
+    while(!(rd_regl(port, S3C2410_UTRSTAT) & S3C2410_UTRSTAT_TXE));
+    //    printk("--------------------GPA6 is 0.\n");
+    s3c2410_gpio_setpin(S3C2410_GPA(6), 0);
+        */        
 	}
-
-
 }
 
 static void s3c24xx_485_start_tx(struct uart_port *port)
@@ -506,6 +552,9 @@ static int s3c24xx_serial_startup(struct uart_port *port)
 
 	ourport->tx_claimed = 1;
 
+    uart_485_wq = create_singlethread_workqueue( "uart_485_wq" );
+    INIT_WORK(&uart_485_data.work, uart_485_delay_wq);
+    
 	dbg("s3c24xx_serial_startup ok\n");
 
 	/* the port reset code should have done the correct
