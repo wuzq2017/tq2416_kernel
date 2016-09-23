@@ -10,6 +10,15 @@ config TQ2416_LEDS
 	depends on (CPU_S3C2416)
 	---help---
 		the LED driver for TQ2416
+
+config TQ2416_GPIO
+        tristate "TQ1416 GPIO' driver"
+        depends on (CPU_S3C2416)
+        ---help---
+                the LED driver for TQ2416
+
+
+
 config TQ2416_BEEP
 	tristate "TQ1416 BEEP driver"
 	depends on (CPU_S3C2416)

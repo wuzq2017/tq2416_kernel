@@ -4,6 +4,7 @@
 
 obj-y				+= mem.o random.o
 
+obj-$(CONFIG_TQ2416_GPIO)     += tq2416_gpio.o
 obj-$(CONFIG_TQ2416_LEDS)     += tq2416_leds.o
 obj-$(CONFIG_TQ2416_BEEP)     += tq2416_beep.o
 obj-$(CONFIG_TQ2416_BACKLIGHT)     += tq2416_backlight.o
